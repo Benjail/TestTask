@@ -40,25 +40,62 @@ namespace TestTask.Repositories.Implementations
              await dbContext.OrderElements
                 .Where(o => o.OrderId == orderId)
                 .ToListAsync();
-
-        public async Task<List<OrderElement>> GetShopCartElements(Guid orderId) =>
+       public async Task<List<OrderElement>> GetShopCartElements(Guid orderId) =>
             await dbContext.OrderElements
                 .Where(o => o.OrderId == orderId)
-                    .ToListAsync();
-        public async Task<OrderElement> GetElementByItem(Guid itemId) =>
+                    .ToListAsync(); 
+        public async Task<OrderElement> GetAsync(Item item) =>
           (await dbContext.OrderElements
-            .Where(o => o.ItemId == itemId)
-                .ToListAsync()).FirstOrDefault();
-        
+            .Where(o => o.ItemId == item.ItemId)
+                .ToListAsync()).FirstOrDefault();  
         public async Task<List<OrderElement>> GetAllAsync() => await dbContext.OrderElements.ToListAsync();
         public async Task<OrderElement> GetAsync(Guid orderElementId) =>
             await dbContext.OrderElements.FindAsync(orderElementId)
                 ?? throw new NullReferenceException();
+        public async Task<List<OrderElement>> GetAsync(Order order) =>
+            (await dbContext.OrderElements.Where(o => o.Order == order)
+                 .ToListAsync())
+             ?? throw new NotImplementedException();
+        
         public async Task Update(OrderElement orderElement)
         {
             dbContext.Entry(orderElement).State = EntityState.Modified;
             await dbContext.SaveChangesAsync();
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public Task<List<OrderElement>> GetAsync(OrderStatus orderStatus)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<OrderElement>> GetAsync(Customer customer)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public Task<Order> GetShopCart(Guid customerId)
+        {
+            throw new NotImplementedException();
+        }
+       
         public void Dispose()
         {
         }

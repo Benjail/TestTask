@@ -12,8 +12,6 @@ namespace TestTask.Repositories.Implementations
     public class OrderRepository : IRepository<Order>
     {
         private AppDbContext dbContext;
-
-        DateTime dateTimeDefault = new DateTime(01, 01, 01, 00, 00, 00);
         public OrderRepository(AppDbContext dbContext)
         {
             this.dbContext = dbContext;
@@ -28,45 +26,60 @@ namespace TestTask.Repositories.Implementations
         public async Task DeleteAsync(Guid orderId)
         {
             var order = await dbContext.Orders.FindAsync(orderId);
-            if (order == null)
-            {
-                throw new NullReferenceException();
-            }
-            else
-            {
-                dbContext.Orders.Remove(order);
-                await dbContext.SaveChangesAsync();
-            }
+            dbContext.Orders.Remove(order);
+            await dbContext.SaveChangesAsync();            
         }
 
-        public async Task<List<Order>> GetOrdersByStatus(OrderStatus orderStatus) =>
-            await dbContext.Orders.Where(o => o.OrderStatus == orderStatus && o.OrderDate != dateTimeDefault).ToListAsync()
-             ?? throw new NullReferenceException();
-        public async Task<List<Order>> GetOrdersByCustomer(Guid customerId) =>
-            await dbContext.Orders.Where(o=>o.CustomerId == customerId && o.OrderDate!= dateTimeDefault).ToListAsync()
-                ?? throw new NullReferenceException();
+        public async Task<Order> GetAsync(Guid orderId) => await dbContext.Orders
+            .Include(o => o.OrderElements)
+            .Where(o => o.OrderId == orderId) 
+            .FirstOrDefaultAsync();
 
-        public async Task<List<Order>> GetAllAsync() => 
-            await dbContext.Orders.ToListAsync()
-             ?? throw new NullReferenceException();
+        public async Task<List<Order>> GetAsync(OrderStatus orderStatus) =>
+            await dbContext.Orders
+            .Where(o => o.OrderStatus == orderStatus)
+            .ToListAsync();
 
-        public async Task<Order> GetAsync(Guid orderId) =>
-            await dbContext.Orders.FindAsync(orderId)
-                ?? throw new NullReferenceException();
-
+        public async Task<List<Order>> GetAsync(Customer customer) =>
+            await dbContext.Orders
+            .Where(o => o.CustomerId == customer.Id)
+            .ToListAsync(); 
+        
+        public async Task<List<Order>> GetAllAsync() =>                     
+            await dbContext.Orders
+            .ToListAsync();            
+        
         public async Task Update(Order order)
         {
-            dbContext.Entry<Order>(order).State = EntityState.Modified;
+            dbContext.Entry(order).State = EntityState.Modified;
             await dbContext.SaveChangesAsync();
-        }
-
-        public async Task<Order> GetShopCart(Guid customerId) =>
-            (await dbContext.Orders
-                .Where(o => o.CustomerId == customerId && o.OrderDate == dateTimeDefault)
-                    .ToListAsync()).FirstOrDefault();
+        }                       
+               
         public void Dispose()
         {
 
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public Task<Order> GetAsync(Item item)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<List<Order>> GetAsync(Order order)
+        {
+            throw new NotImplementedException();
         }
     }
 }

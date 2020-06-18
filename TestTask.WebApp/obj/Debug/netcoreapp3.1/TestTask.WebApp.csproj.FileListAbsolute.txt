@@ -58,4 +58,6 @@ C:\Users\Михаил\source\repos\TestTask\TestTask.WebApp\bin\Debug\netcoreapp
 C:\Users\Михаил\source\repos\TestTask\TestTask.WebApp\bin\Debug\netcoreapp3.1\Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll
 C:\Users\Михаил\source\repos\TestTask\TestTask.WebApp\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll
 C:\Users\Михаил\source\repos\TestTask\TestTask.WebApp\bin\Debug\netcoreapp3.1\Newtonsoft.Json.Bson.dll
+C:\Users\Михаил\source\repos\TestTask\TestTask.WebApp\bin\Debug\netcoreapp3.1\xunit.assert.dll
+C:\Users\Михаил\source\repos\TestTask\TestTask.WebApp\bin\Debug\netcoreapp3.1\xunit.execution.dotnet.dll
 C:\Users\Михаил\source\repos\TestTask\TestTask.WebApp\obj\Debug\netcoreapp3.1\TestTask.WebApp.MvcApplicationPartsAssemblyInfo.cache

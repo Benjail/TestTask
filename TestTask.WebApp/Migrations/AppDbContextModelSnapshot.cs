@@ -271,7 +271,6 @@ namespace TestTask.WebApp.Migrations
 
                     b.Property<DateTime>("ShipmentDate")
                         .HasColumnType("datetime2");
-
                     b.HasKey("OrderId");
 
                     b.HasIndex("CustomerId");

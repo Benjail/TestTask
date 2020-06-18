@@ -23,21 +23,13 @@ namespace TestTask.Repositories.Implementations
         }
         public async Task DeleteAsync(Guid itemId)
         {
-           // var item = await dbContext.Items.FindAsync(itemId);
-            if (await dbContext.Items.FindAsync(itemId)!=null)
-            {
                 dbContext.Items.Remove(await dbContext.Items.FindAsync(itemId));
                 await dbContext.SaveChangesAsync();  
-            }
-            else
-            {
-                throw new NullReferenceException();
-            }
         }
         public async Task<List<Item>> GetAllAsync() => await dbContext.Items.ToListAsync();
         public async Task<Item> GetAsync(Guid itemId) =>
-            await dbContext.Items.FindAsync(itemId) 
-                ?? throw new NullReferenceException();
+            await dbContext.Items.FindAsync(itemId);
+
         public async Task Update(Item item)
         {
            dbContext.Entry(item).State = EntityState.Modified;
@@ -45,6 +37,40 @@ namespace TestTask.Repositories.Implementations
         }
         public void Dispose()
         { 
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public Task<List<Item>> GetAsync(OrderStatus orderStatus)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<Item>> GetAsync(Customer customer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Item> GetAsync(Item item)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<List<Item>> GetAsync(Order order)
+        {
+            throw new NotImplementedException();
         }
     }
 }

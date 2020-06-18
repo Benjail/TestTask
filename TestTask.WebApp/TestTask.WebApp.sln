@@ -5,9 +5,9 @@ VisualStudioVersion = 16.0.29728.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestTask.WebApp", "TestTask.WebApp.csproj", "{8C012666-A2FC-49F5-914F-8B092529D56A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{021E14F7-AABE-4C29-8E31-D3BE717BCD84}"
-	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestTask.XUnitTests", "..\TestTask.XUnitTests\TestTask.XUnitTests.csproj", "{8BFF832D-7A0A-4000-9D4B-BB1FE21F4407}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8C012666-A2FC-49F5-914F-8B092529D56A} = {8C012666-A2FC-49F5-914F-8B092529D56A}
 	EndProjectSection
 EndProject
 Global
@@ -20,6 +20,10 @@ Global
 		{8C012666-A2FC-49F5-914F-8B092529D56A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C012666-A2FC-49F5-914F-8B092529D56A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C012666-A2FC-49F5-914F-8B092529D56A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8BFF832D-7A0A-4000-9D4B-BB1FE21F4407}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BFF832D-7A0A-4000-9D4B-BB1FE21F4407}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BFF832D-7A0A-4000-9D4B-BB1FE21F4407}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BFF832D-7A0A-4000-9D4B-BB1FE21F4407}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

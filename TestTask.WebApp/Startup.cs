@@ -7,11 +7,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using TestTask.Repositories;
 using TestTask.Models;
 using TestTask.Database;
 using TestTask.Services;
 using Newtonsoft.Json;
+using TestTask.Repositories.Implementations;
+using TestTask.WebApp.Repositories.Interfaces;
+using TestTask.WebApp.Services;
 
 namespace TestTask
 {
@@ -33,6 +35,7 @@ namespace TestTask
             services.AddDbContext<AppDbContext>(config =>
                 config.UseSqlServer(Configuration.GetConnectionString("TestTaskDb")
              //   b => b.MigrationsAssembly("MishaTask")
+             
                 ));
 
             services.AddIdentity<Customer, IdentityRole<Guid>>(config => //добавление сервиса Identity и настройка параметров Identity
@@ -55,7 +58,10 @@ namespace TestTask
                 });
             services.AddAuthorization();
             services.AddScoped<Generator>();
-            services.AddScoped<UnitOfWork>(); 
+            services.AddScoped<IUnitOfWork,UnitOfWork>();
+            // services.AddTransient<IUnitOfWork, UnitOfWork>();
+            services.AddSingleton<IShopCart<Order>, ShopCart>();
+            services.AddSession();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

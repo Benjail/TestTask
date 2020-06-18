@@ -2,31 +2,38 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TestTask.Models;
-using TestTask.Repositories;
 using TestTask.Requests;
 using TestTask.Services;
+using TestTask.WebApp.Repositories.Interfaces;
+using TestTask.WebApp.Services;
 
-namespace TestTask.Controllers
+namespace TestTask.Controllers                                  
 {
-    [Authorize(AuthenticationSchemes ="Cookies", Roles ="User")]            
+    [Authorize(AuthenticationSchemes = "Cookies", Roles = "User")]
     [Route("User")]
-    public class UserController: Controller
+    public class UserController : Controller
     {
-        private readonly UnitOfWork unitOfWork;
-        private readonly Generator generator;
+        private readonly IUnitOfWork unitOfWork;
 
-        public UserController(UnitOfWork unitOfWork,  Generator generator) 
+        public UserController(IUnitOfWork unitOfWork)
         {
             this.unitOfWork = unitOfWork;
-            this.generator = generator;          
         }
 
         [HttpGet("item")] //получить товар по ID - Ok
-        public async Task<IActionResult> GetItem(Guid guid) 
+        public async Task<IActionResult> GetItem(Guid guid)
         {
-             return Json(await unitOfWork.Items.GetAsync(guid));
+            if (await unitOfWork.Items.GetAsync(guid) != null)
+            {
+                return Json(await unitOfWork.Items.GetAsync(guid));
+            }
+            else
+            {
+                return NotFound("Item is not found");
+            }
         }
 
         [AllowAnonymous]
@@ -37,11 +44,11 @@ namespace TestTask.Controllers
         }
 
         [HttpGet("allorders")] //Клиент получает все свои заказы -Ok
-        public async Task<IActionResult> GetAllOrders() 
+        public async Task<IActionResult> GetAllOrders()
         {
-            return Json(await unitOfWork.Orders.GetOrdersByCustomer((
-                await unitOfWork.Customers.GetCurrentCustomer(HttpContext)).Id
-                    )); 
+            return Json(await unitOfWork.Orders.GetAsync((
+                await unitOfWork.Customers.GetCurrentCustomer(HttpContext))
+                    ));
         }
 
         [HttpGet("ordersbystatus")] //Получение заказов по статусу -Ok
@@ -50,133 +57,151 @@ namespace TestTask.Controllers
 
             if (ModelState.IsValid)
             {
-                List<Order> filteredorders = await unitOfWork.Orders.GetOrdersByStatus(request.orderStatus);
-                return Json(filteredorders);
+                List<Order> filteredorders = await unitOfWork.Orders.GetAsync(request.orderStatus);
+                if (filteredorders.Count>0)
+                {
+                    return Json(filteredorders);
+                }
+                else 
+                {
+                    return NotFound("Order is not found");                      
+                }
             }
             else
             {
                 return BadRequest("Incorrect input");
             }
-          
         }
 
-        [HttpGet("shopcart")] //получение элементов корзины  -Ok
-        public async Task<IActionResult> GetShopCart()
-        { 
-            Order shopCart = await unitOfWork.Orders.GetShopCart(
-                (await unitOfWork.Customers.GetCurrentCustomer(HttpContext)).Id);
-            return Json(await unitOfWork.OrderElements.GetShopCartElements(shopCart.OrderId));     
+        [HttpGet("getorder")]
+        public async Task<IActionResult> GetOrder(Guid orderId)
+        {
+            var order = await unitOfWork.Orders.GetAsync(orderId);
+            if (order==null)
+            {
+                return NotFound("Not found the order");
+            }
+            else
+            {
+                return Json(order); 
+            }
         }
-   
+
+        [HttpDelete("deleteorder")] //Удалить заказ - Ok
+        public async Task<IActionResult> DeleteOrder(Guid orderId)
+        {
+            var order = await unitOfWork.Orders.GetAsync(orderId);
+            if (order != null)
+            {
+
+                if (order.OrderStatus == OrderStatus.New)
+                {
+                    await unitOfWork.Orders.DeleteAsync(orderId);
+                    return Ok();
+                }
+                else
+                {
+                    return BadRequest("Your order is processing or finished");
+                }
+            }
+            else
+            {
+                return NotFound("Not found the order");
+            }
+        }
+
+        [HttpGet("shopcart")]
+        public async Task<IActionResult> GetShopCart()
+        {
+            bool iskey = HttpContext.Request.Cookies.ContainsKey("OrderId");
+            if (iskey == false)
+            {
+                return BadRequest("You don't have any Items in your shopcart");
+            }
+            else
+            {
+                var OrderId = Guid.Parse(HttpContext.Request.Cookies["OrderId"]);
+                var order = await unitOfWork.Orders.GetAsync(OrderId);
+                return Json(order.OrderElements);
+            }
+        }
+
         [HttpPost("addtocart")] //Добавить товары в корзину  - Ok            
         public async Task<IActionResult> AddItemToShopCart([FromBody] AddItemsToShopCart requestmodel)
         {
             if (ModelState.IsValid)
-            {
-                var customer = await unitOfWork.Customers.GetCurrentCustomer(HttpContext);//поиск текущего пользователя
-                var item = await unitOfWork.Items.GetAsync(requestmodel.ItemId); // поиск товара по Id
-                if (await unitOfWork.Orders.GetShopCart(customer.Id) == null) //случай если несделанный заказ не существует
-                {                    
-                    Order order = new Order()                   
-                    {    
-                        OrderId = Guid.NewGuid(),
-                        CustomerId = customer.Id,                                       
-                        Customer = customer
+            {     
+                var item = await unitOfWork.Items.GetAsync(requestmodel.ItemId);             
+                bool iskey = HttpContext.Request.Cookies.ContainsKey("OrderId");
+
+                if (iskey == false) //ключ в куки не существует 
+                {
+                    Guid OrderId = Guid.NewGuid();
+        
+                    Order neworder = new Order()
+                    {
+                        CustomerId = (await unitOfWork.Customers.GetCurrentCustomer(HttpContext)).Id,
+                        OrderId = OrderId,
+                        OrderElements = new List<OrderElement>{new OrderElement(requestmodel.ItemId, requestmodel.ItemCount)
+                        {
+                            ItemPrice = item.Price * requestmodel.ItemCount,
+                            OrderId = OrderId                         
+                        }    
+                      }
                     };
-                    await unitOfWork.Orders.CreateAsync(order);
-                    
-                        OrderElement orderElement = new OrderElement(requestmodel.ItemId, requestmodel.ItemCount)
-                        {
-                            OrderElementId = Guid.NewGuid(),
-                            OrderId = order.OrderId,
-                            ItemPrice = item.Price,
-                            Order = order
-                        };
-                        await unitOfWork.OrderElements.CreateAsync(orderElement);
-                        order.OrderElements.Add(orderElement);                                      
-                }                                               
-               else  //случай если несделанный заказ существует
-                {                                               
-                    var order = await unitOfWork.Orders.GetShopCart(customer.Id); //поиск пустого заказа пользователя
-                    if (await unitOfWork.OrderElements.GetElementByItem(requestmodel.ItemId) == null) //случай если товара ещё такого нет
-                    {
-                        OrderElement orderElement = new OrderElement(requestmodel.ItemId, requestmodel.ItemCount)
-                        {
-                            OrderElementId = Guid.NewGuid(),
-                            OrderId = order.OrderId,
-                            ItemPrice = item.Price,
-                            Order = order
-                        };
-                        await unitOfWork.OrderElements.CreateAsync(orderElement);
-                        order.OrderElements.Add(orderElement);
-                    }
-                    else //слчай если товар уже такой есть
-                    {
-                        OrderElement el = await unitOfWork.OrderElements.GetElementByItem(requestmodel.ItemId);
-                        el.ItemCount += requestmodel.ItemCount;
-                        await unitOfWork.OrderElements.Update(el);
-                    }
+                    await unitOfWork.Orders.CreateAsync(neworder); 
+
+                    HttpContext.Response.Cookies.Append("OrderId", Convert.ToString(neworder.OrderId));
+                    return Ok("Вы создали корзину и положили туда "+ requestmodel.ItemCount+" товара");
                 }
+                else //ключ в куки существует
+                {
+                    Guid OrderId = Guid.Parse(HttpContext.Request.Cookies["OrderId"]);
+                    var order = await unitOfWork.Orders.GetAsync(OrderId);
+
+                    OrderElement orderElement = new OrderElement(requestmodel.ItemId, requestmodel.ItemCount)
+                    {
+                        ItemPrice = item.Price * requestmodel.ItemCount,
+                        OrderId = OrderId,
+                        Order = order,
+                        OrderElementId = Guid.NewGuid()
+                    };
+                                                          
+                    await unitOfWork.OrderElements.CreateAsync(orderElement);
+                    order.OrderElements.Add(await unitOfWork.OrderElements.GetAsync(orderElement.OrderElementId)); 
+
+                    return Ok("Вы добавили " + requestmodel.ItemCount + " товара в корзину");//a + "\nOrderId: " + OrderId);
+                }
+            }
+            else
+            {
+                return BadRequest("Incorrect input");
+            }
+        }
+
+        [HttpPost("makeorder")] // Сделать заказ
+        public async Task<IActionResult> MakeOrder()
+        {
+            bool iskey = HttpContext.Request.Cookies.ContainsKey("OrderId");
+            var customer = await unitOfWork.Customers.GetCurrentCustomer(HttpContext);
+            if ( iskey == false)
+            {
+                return BadRequest("You don't have any Items in your shopcart");
+            }
+            else
+            {
+                Guid OrderId = Guid.Parse(HttpContext.Request.Cookies["OrderId"]);
+                var order = await unitOfWork.Orders.GetAsync(OrderId);
+
+                order.OrderNumber = new Generator().GetOrderNumber();                   
+                order.OrderStatus = OrderStatus.New;
+                order.OrderDate = DateTime.Now;
                 await unitOfWork.SaveAsync();
-                return Ok();
-            }
-            else
-            {
-                return (BadRequest("Incorrect request")); 
+
+                Response.Cookies.Delete("OrderId");
+                return Ok("You've made order: №"+ order.OrderNumber); 
             }
         }
-
-        [HttpPost("delfromcart")] //Удалить элементы из корзины  - Ok
-        public async Task<IActionResult> DelItemFromShopCart([FromBody] DelItemsFromShopCart requestmodel)
-        {
-            if (ModelState.IsValid)
-            {
-                var customer = await unitOfWork.Customers.GetCurrentCustomer(HttpContext);//поиск текущего пользователя
-                var item = await unitOfWork.Items.GetAsync(requestmodel.ItemId); // поиск товара по Id
-                if (await unitOfWork.Orders.GetShopCart(customer.Id) == null)
-                {
-                    return BadRequest("Your shopcart is empty!");
-                }
-                else
-                {
-                    var OrderElement = await unitOfWork.OrderElements.GetElementByItem(requestmodel.ItemId);
-                    await unitOfWork.OrderElements.DeleteAsync(OrderElement.OrderElementId);
-
-                }
-                return Ok();
-            }
-            else
-            {
-                return (BadRequest("Incorrect request")); 
-            }
-        }
-
-        [HttpPost("makeorder")] //Сделать заказ - Ok
-        public async Task MakeOrder() 
-        {
-            var customer = await unitOfWork.Customers.GetCurrentCustomer(HttpContext);            
-            Random rnd = new Random();
-            var order = await unitOfWork.Orders.GetShopCart(customer.Id);
-            order.OrderStatus = OrderStatus.New;
-            order.OrderDate = DateTime.Now;               
-            order.OrderNumber = rnd.Next(1000000, 10000000);
-            order.OrderElements = await unitOfWork.OrderElements.GetShopCartElements(order.OrderId);
-            await unitOfWork.Orders.Update(order);
-        }
-
-        [HttpPost("deleteorder")] //Удалить заказ - Ok
-        public async Task DeleteOrder(Guid orderid)
-        {
-            var order = await unitOfWork.Orders.GetAsync(orderid);
-            if (order.OrderStatus == OrderStatus.New)
-            {
-                await unitOfWork.Orders.DeleteAsync(orderid);
-            }
-            else
-            {
-                BadRequest("Your order is processing or finished");
-            }
-        }
-
+        
     }
 }

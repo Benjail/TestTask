@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using TestTask.Requests;
-using TestTask.Repositories;
 using TestTask.Models;
 using System.Security.Claims;
+using TestTask.WebApp.Repositories.Interfaces;
 
 namespace TestTask.Controllers
 {
@@ -17,11 +17,11 @@ namespace TestTask.Controllers
     public class AccountController : Controller
     {
         private readonly UserManager<Customer> userManager;
-        private readonly UnitOfWork unitOfWork;
+        private readonly IUnitOfWork unitOfWork;
 
         public AccountController(
             UserManager<Customer> userManager,
-            UnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork)
         {
             this.userManager = userManager;
             this.unitOfWork = unitOfWork;

@@ -4,7 +4,6 @@ namespace TestTask.Services
 {
     public class Generator
     {
-        float OrderNumber = 0;
         public string GetPass()
         {
             int[] arr = new int[16]; // сделаем длину пароля в 16 символов
@@ -13,17 +12,16 @@ namespace TestTask.Services
 
             for (int i = 0; i < arr.Length; i++)
             {
-                arr[i] = rnd.Next(33, 125);
-                Password += (char)arr[i];
+                arr[i] = rnd.Next(33, 125);                                 
+                Password += (char)arr[i];                               
             }
-            return Password;
+            return Password;                                            
         }
-        public float GetOrderNumber()
+        public int GetOrderNumber()
         {
-
-            OrderNumber += 1;
-            return OrderNumber;
-            
+            Random rnd = new Random();
+            int OrderNumber = Convert.ToInt32(rnd.Next(1000000, 9999999));                                          
+            return OrderNumber;                                         
         }
     }
 }
